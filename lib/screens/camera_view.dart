@@ -120,22 +120,31 @@ class _CameraViewState extends State<CameraView> {
       );
 
   Widget _detectionViewModeToggle() => Positioned(
-        bottom: 8,
-        left: 8,
-        child: SizedBox(
-          height: 30.0,
-          width: 30.0,
-          child: FloatingActionButton(
-            heroTag: Object(),
-            onPressed: widget.onDetectorViewModeChanged,
-            backgroundColor: Colors.black54,
-            child: Icon(
-              Icons.photo_library_outlined,
-              size: 25,
-            ),
-          ),
+      bottom: 8,
+      left: 8,
+      child: FloatingActionButton(
+        mini: true, // use the mini version instead of a custom size
+        heroTag: 'detectorToggle',
+        onPressed: () {
+          if (widget.onDetectorViewModeChanged != null) {
+            try {
+              widget.onDetectorViewModeChanged!();
+            } catch (e) {
+              print('Error in detection view mode toggle callback: $e');
+            }
+          } else {
+            print('Warning: onDetectorViewModeChanged callback is not set.');
+          }
+        },
+        backgroundColor: Colors.black54,
+        child: const Icon(
+          Icons.photo_library_outlined,
+          size: 20, // Adjust the icon size if needed
         ),
-      );
+      ),
+    );
+
+
 
   Widget _switchLiveCameraToggle() => Positioned(
         bottom: 8,

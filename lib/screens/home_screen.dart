@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
@@ -14,8 +16,8 @@ class TextRecognizerView extends StatefulWidget {
 }
 
 class _TextRecognizerViewState extends State<TextRecognizerView> {
-  var _script = TextRecognitionScript.latin;
-  var _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+  final _script = TextRecognitionScript.latin;
+  final _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
   bool _canProcess = true;
   bool _isBusy = false;
   CustomPaint? _customPaint;
@@ -34,168 +36,207 @@ class _TextRecognizerViewState extends State<TextRecognizerView> {
     return Scaffold(
       body: Stack(children: [
         DetectorView(
-          title: 'Text Detector',
+          title: 'ID CARD SCANNER',
           customPaint: _customPaint,
           text: _text,
           onImage: _processImage,
           initialCameraLensDirection: _cameraLensDirection,
           onCameraLensDirectionChanged: (value) => _cameraLensDirection = value,
         ),
-        // Positioned(
-        //     top: 30,
-        //     left: 100,
-        //     right: 100,
-        //     child: Row(
-        //       children: [
-        //         Spacer(),
-        //         Container(
-        //             decoration: BoxDecoration(
-        //               color: Colors.black54,
-        //               borderRadius: BorderRadius.circular(10.0),
-        //             ),
-        //             child: Padding(
-        //               padding: const EdgeInsets.all(4.0),
-        //               child: _buildDropdown(),
-        //             )),
-        //         Spacer(),
-        //       ],
-        //     )),
+        
       ]),
     );
   }
 
-  // Widget _buildDropdown() => DropdownButton<TextRecognitionScript>(
-  //       value: _script,
-  //       icon: const Icon(Icons.arrow_downward),
-  //       elevation: 16,
-  //       style: const TextStyle(color: Colors.blue),
-  //       underline: Container(
-  //         height: 2,
-  //         color: Colors.blue,
-  //       ),
-  //       onChanged: (TextRecognitionScript? script) {
-  //         if (script != null) {
-  //           setState(() {
-  //             _script = script;
-  //             _textRecognizer.close();
-  //             _textRecognizer = TextRecognizer(script: _script);
-  //           });
-  //         }
-  //       },
-  //       items: TextRecognitionScript.values
-  //           .map<DropdownMenuItem<TextRecognitionScript>>((script) {
-  //         return DropdownMenuItem<TextRecognitionScript>(
-  //           value: script,
-  //           child: Text(script.name),
-  //         );
-  //       }).toList(),
-  //     );
+  
   Future<void> _processImage(InputImage inputImage) async {
-    if (!_canProcess) return;
-    if (_isBusy) return;
-    _isBusy = true;
-    setState(() {
-      _text = '';
-    });
-    final recognizedText = await _textRecognizer.processImage(inputImage);
-    if (inputImage.metadata?.size != null &&
-        inputImage.metadata?.rotation != null) {
-      final painter = TextRecognizerPainter(
-        recognizedText,
-        inputImage.metadata!.size,
-        inputImage.metadata!.rotation,
-        _cameraLensDirection,
-      );
-      _customPaint = CustomPaint(painter: painter);
-    } else {
-      // Convert recognized text blocks to a list of strings
-      List<String> recognizedTextList =
-          recognizedText.blocks.map((e) => e.text.toUpperCase()).toList();
+  if (!_canProcess) return;
+  if (_isBusy) return;
+  _isBusy = true;
 
-      // Combine the list elements into a single string and display it
-      _text = 'Recognized text:\n\n${recognizedTextList.join('\n')}';
-      Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => RecognizedTextDisplay(
-        recognizedTextList: recognizedText.blocks.map((e) => e.text.toUpperCase()).toList(),
+  setState(() {
+    _text = '';
+  });
+
+  final recognizedText = await _textRecognizer.processImage(inputImage);
+
+  if (inputImage.metadata?.size != null && inputImage.metadata?.rotation != null) {
+    final painter = TextRecognizerPainter(
+      recognizedText,
+      inputImage.metadata!.size,
+      inputImage.metadata!.rotation,
+      _cameraLensDirection,
+    );
+    _customPaint = CustomPaint(painter: painter);
+  } else {
+    List<String> recognizedTextList =
+        recognizedText.blocks.map((e) => e.text.toUpperCase()).toList();
+
+    List<String> processedList = [];
+    for (int i = 0; i < recognizedTextList.length; i++) {
+      if (recognizedTextList[i] == "NAME:" ||
+          recognizedTextList[i] == "SEX:" ||
+          recognizedTextList[i] == "DATE OF BIRTH." ||
+          recognizedTextList[i] == "DATE OF ISSUE:" ||
+          recognizedTextList[i] == "MEMBERSHIP NO.") { // New Condition
+        if (recognizedTextList[i] == "SEX:" && i + 1 < recognizedTextList.length) {
+          processedList.add('${recognizedTextList[i]} ${recognizedTextList[i + 1]}');
+          i++;
+        } else if (recognizedTextList[i] == "DATE OF BIRTH." && i + 1 < recognizedTextList.length) {
+          processedList.add('${recognizedTextList[i]} ${recognizedTextList[i + 1]}');
+          i++;
+        } else if (recognizedTextList[i] == "DATE OF ISSUE:" && i + 1 < recognizedTextList.length) {
+          processedList.add('${recognizedTextList[i]} ${recognizedTextList[i + 1]}');
+          i++;
+        } else if (recognizedTextList[i] == "MEMBERSHIP NO." && i + 1 < recognizedTextList.length) { // Handle MEMBERSHIP NO.
+          processedList.add('${recognizedTextList[i]} ${recognizedTextList[i + 1]}');
+          i++;
+        } else {
+          processedList.add('${recognizedTextList[i]} ${recognizedTextList[i + 1]}');
+          i++;
+        }
+      } else {
+        processedList.add(recognizedTextList[i]);
+      }
+    }
+    _text = 'YOUR CARD INFORMATION:\n\n${processedList.join('\n')}';
+
+    // Navigate to the display page with the processed list
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RecognizedTextDisplay(
+          recognizedTextList: processedList,
+        ),
       ),
-    ),
-  );
-      // Print both the list and the combined string
-      print("Recognized Text List: $recognizedTextList");
-      print("Combined Recognized Text:\n$_text");
+    );
 
-      _customPaint = null;
-    }
+    
 
-    _isBusy = false;
-    if (mounted) {
-      setState(() {});
-    }
+    // Print the processed list and combined string
+    print("Processed Recognized Text List: $processedList");
+    print("Combined Recognized Text:\n$_text");
+
+    _customPaint = null;
+  }
+
+  _isBusy = false;
+  if (mounted) {
+    setState(() {});
   }
 }
 
 
+
+}
+
 class RecognizedTextDisplay extends StatelessWidget {
   final List<String> recognizedTextList;
 
-  RecognizedTextDisplay({required this.recognizedTextList});
+  const RecognizedTextDisplay({super.key, required this.recognizedTextList});
+
+  void _syncDataToDatabase(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RecognizedTextDisplay(
+          recognizedTextList: recognizedTextList,
+        ),
+      ),
+    );
+    print("Syncing data to the database...");
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 158, 157, 157),
       appBar: AppBar(
-        title: const Text('Recognized Text Display',style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),),
+        title: const Text(
+          'USER NHIS CARD DETAILS',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
         backgroundColor: Colors.greenAccent.shade700,
+        actions: [
+              IconButton(
+                icon: Icon(
+                   Icons.sync_outlined,
+                  color: Colors.white,
+                ),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => RecognizedTextDisplay(recognizedTextList: recognizedTextList))),
+              ),
+            ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: ListView.builder(
-          itemCount: recognizedTextList.length,
-          itemBuilder: (context, index) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: TextField(
-                controller: TextEditingController(
-                  text: recognizedTextList[index],
-                ),
-                readOnly: true,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
-                decoration: InputDecoration(
-                  labelText: 'Field ${index + 1}',
-                  labelStyle: TextStyle(
-                    color: Colors.greenAccent.shade700,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  filled: true,
-                  fillColor: Colors.greenAccent.shade100,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide.none,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.text_fields,
-                    color: Colors.greenAccent.shade700,
-                  ),
-                  // focusedBorder: OutlineInputBorder(
-                  //   borderRadius: BorderRadius.circular(12.0),
-                  //   borderSide: BorderSide(
-                  //     color: Colors.greenAccent.shade700,
-                  //     width: 2.0,
-                  //   ),
-                  // ),
-                ),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                itemCount: recognizedTextList.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: IntrinsicHeight(
+                      child: TextField(
+                        controller: TextEditingController(
+                          text: recognizedTextList[index],
+                        ),
+                        readOnly: true,
+                        maxLines: null, // Allows the TextField to expand to fit all text
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold, // Make the text bold
+                          color: Colors.black87,
+                        ),
+                        decoration: InputDecoration(
+                          // labelText: 'Field ${index + 1}',
+                          labelStyle: TextStyle(
+                            color: const Color.fromARGB(255, 2, 26, 8),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          filled: true,
+                          fillColor: Colors.greenAccent.shade100,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                            borderSide: BorderSide.none,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.text_fields,
+                            color: Colors.greenAccent.shade700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+            // Sync Button
+            // Padding(
+            //   padding: const EdgeInsets.only(top: 16.0),
+            //   child: ElevatedButton(
+            //     onPressed: () => _syncDataToDatabase(context),
+            //     style: ElevatedButton.styleFrom(
+            //       backgroundColor: Colors.greenAccent.shade700, // Button background color
+            //       shape: RoundedRectangleBorder(
+            //         borderRadius: BorderRadius.circular(12),
+            //       ),
+            //       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
+            //     ),
+            //     child: const Text(
+            //       'Sync NHIS Card Info',
+            //       style: TextStyle(
+            //         fontSize: 16,
+            //         fontWeight: FontWeight.bold,
+            //         color: Colors.white,
+            //       ),
+            //     ),
+            //   ),
+            // ),
+          ],
         ),
       ),
     );
   }
 }
-

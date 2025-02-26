@@ -4,9 +4,9 @@
     <uses-feature android:name="android.hardware.camera.autofocus" />
 
     <application
-        android:label="nhis_card_scanner"
+        android:label="ID SCANNER"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"
